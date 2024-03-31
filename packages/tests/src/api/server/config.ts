@@ -1,19 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions,@typescript-eslint/require-await */
 
-import { expect } from 'chai'
-import { parallelTests } from '@peertube/peertube-node-utils'
 import { ActorImageType, CustomConfig, HttpStatusCode } from '@peertube/peertube-models'
 import {
+  PeerTubeServer,
   cleanupTests,
   createSingleServer,
   killallServers,
   makeActivityPubGetRequest,
   makeGetRequest,
   makeRawRequest,
-  PeerTubeServer,
   setAccessTokensToServers
 } from '@peertube/peertube-server-commands'
-import { testFileExistsOrNot, testImage, testAvatarSize } from '@tests/shared/checks.js'
+import { testAvatarSize, testFileExistsOnFSOrNot, testImage } from '@tests/shared/checks.js'
+import { expect } from 'chai'
 import { basename } from 'path'
 
 function checkInitialConfig (server: PeerTubeServer, data: CustomConfig) {
@@ -57,7 +56,7 @@ function checkInitialConfig (server: PeerTubeServer, data: CustomConfig) {
   expect(data.signup.requiresApproval).to.be.false
   expect(data.signup.requiresEmailVerification).to.be.false
 
-  expect(data.admin.email).to.equal('admin' + server.internalServerNumber + '@example.com')
+  expect(data.admin.email).to.equal(`admin${server.internalServerNumber}@example.com`)
   expect(data.contactForm.enabled).to.be.true
 
   expect(data.user.history.videos.enabled).to.be.true
@@ -137,369 +136,250 @@ function checkInitialConfig (server: PeerTubeServer, data: CustomConfig) {
   expect(data.export.users.maxUserVideoQuota).to.equal(10737418240)
 }
 
-function checkUpdatedConfig (data: CustomConfig) {
-  expect(data.instance.name).to.equal('PeerTube updated')
-  expect(data.instance.shortDescription).to.equal('my short description')
-  expect(data.instance.description).to.equal('my super description')
+function buildNewCustomConfig (server: PeerTubeServer): CustomConfig {
+  return {
+    instance: {
+      name: 'PeerTube updated',
+      shortDescription: 'my short description',
+      description: 'my super description',
+      terms: 'my super terms',
+      codeOfConduct: 'my super coc',
 
-  expect(data.instance.terms).to.equal('my super terms')
-  expect(data.instance.creationReason).to.equal('my super creation reason')
-  expect(data.instance.codeOfConduct).to.equal('my super coc')
-  expect(data.instance.moderationInformation).to.equal('my super moderation information')
-  expect(data.instance.administrator).to.equal('Kuja')
-  expect(data.instance.maintenanceLifetime).to.equal('forever')
-  expect(data.instance.businessModel).to.equal('my super business model')
-  expect(data.instance.hardwareInformation).to.equal('2vCore 3GB RAM')
+      creationReason: 'my super creation reason',
+      moderationInformation: 'my super moderation information',
+      administrator: 'Kuja',
+      maintenanceLifetime: 'forever',
+      businessModel: 'my super business model',
+      hardwareInformation: '2vCore 3GB RAM',
 
-  expect(data.instance.languages).to.deep.equal([ 'en', 'es' ])
-  expect(data.instance.categories).to.deep.equal([ 1, 2 ])
+      languages: [ 'en', 'es' ],
+      categories: [ 1, 2 ],
 
-  expect(data.instance.defaultClientRoute).to.equal('/videos/recently-added')
-  expect(data.instance.isNSFW).to.be.true
-  expect(data.instance.defaultNSFWPolicy).to.equal('blur')
-  expect(data.instance.customizations.javascript).to.equal('alert("coucou")')
-  expect(data.instance.customizations.css).to.equal('body { background-color: red; }')
+      isNSFW: true,
+      defaultNSFWPolicy: 'blur' as 'blur',
 
-  expect(data.services.twitter.username).to.equal('@Kuja')
+      defaultClientRoute: '/videos/recently-added',
 
-  expect(data.client.videos.miniature.preferAuthorDisplayName).to.be.true
-  expect(data.client.menu.login.redirectOnSingleExternalAuth).to.be.true
-
-  expect(data.cache.previews.size).to.equal(2)
-  expect(data.cache.captions.size).to.equal(3)
-  expect(data.cache.torrents.size).to.equal(4)
-  expect(data.cache.storyboards.size).to.equal(5)
-
-  expect(data.signup.enabled).to.be.false
-  expect(data.signup.limit).to.equal(5)
-  expect(data.signup.requiresApproval).to.be.false
-  expect(data.signup.requiresEmailVerification).to.be.false
-  expect(data.signup.minimumAge).to.equal(10)
-
-  // We override admin email in parallel tests, so skip this exception
-  if (parallelTests() === false) {
-    expect(data.admin.email).to.equal('superadmin1@example.com')
-  }
-
-  expect(data.contactForm.enabled).to.be.false
-
-  expect(data.user.history.videos.enabled).to.be.false
-  expect(data.user.videoQuota).to.equal(5242881)
-  expect(data.user.videoQuotaDaily).to.equal(318742)
-
-  expect(data.videoChannels.maxPerUser).to.equal(24)
-
-  expect(data.transcoding.enabled).to.be.true
-  expect(data.transcoding.remoteRunners.enabled).to.be.true
-  expect(data.transcoding.threads).to.equal(1)
-  expect(data.transcoding.concurrency).to.equal(3)
-  expect(data.transcoding.allowAdditionalExtensions).to.be.true
-  expect(data.transcoding.allowAudioFiles).to.be.true
-  expect(data.transcoding.profile).to.equal('vod_profile')
-  expect(data.transcoding.resolutions['144p']).to.be.false
-  expect(data.transcoding.resolutions['240p']).to.be.false
-  expect(data.transcoding.resolutions['360p']).to.be.true
-  expect(data.transcoding.resolutions['480p']).to.be.true
-  expect(data.transcoding.resolutions['720p']).to.be.false
-  expect(data.transcoding.resolutions['1080p']).to.be.false
-  expect(data.transcoding.resolutions['2160p']).to.be.false
-  expect(data.transcoding.alwaysTranscodeOriginalResolution).to.be.false
-  expect(data.transcoding.hls.enabled).to.be.false
-  expect(data.transcoding.webVideos.enabled).to.be.true
-  expect(data.transcoding.originalFile.keep).to.be.true
-
-  expect(data.live.enabled).to.be.true
-  expect(data.live.allowReplay).to.be.true
-  expect(data.live.latencySetting.enabled).to.be.false
-  expect(data.live.maxDuration).to.equal(5000)
-  expect(data.live.maxInstanceLives).to.equal(-1)
-  expect(data.live.maxUserLives).to.equal(10)
-  expect(data.live.transcoding.enabled).to.be.true
-  expect(data.live.transcoding.remoteRunners.enabled).to.be.true
-  expect(data.live.transcoding.threads).to.equal(4)
-  expect(data.live.transcoding.profile).to.equal('live_profile')
-  expect(data.live.transcoding.resolutions['144p']).to.be.true
-  expect(data.live.transcoding.resolutions['240p']).to.be.true
-  expect(data.live.transcoding.resolutions['360p']).to.be.true
-  expect(data.live.transcoding.resolutions['480p']).to.be.true
-  expect(data.live.transcoding.resolutions['720p']).to.be.true
-  expect(data.live.transcoding.resolutions['1080p']).to.be.true
-  expect(data.live.transcoding.resolutions['2160p']).to.be.true
-  expect(data.live.transcoding.alwaysTranscodeOriginalResolution).to.be.false
-
-  expect(data.videoStudio.enabled).to.be.true
-  expect(data.videoStudio.remoteRunners.enabled).to.be.true
-
-  expect(data.videoFile.update.enabled).to.be.true
-
-  expect(data.import.videos.concurrency).to.equal(4)
-  expect(data.import.videos.http.enabled).to.be.false
-  expect(data.import.videos.torrent.enabled).to.be.false
-  expect(data.import.videoChannelSynchronization.enabled).to.be.false
-  expect(data.import.users.enabled).to.be.false
-  expect(data.autoBlacklist.videos.ofUsers.enabled).to.be.true
-
-  expect(data.followers.instance.enabled).to.be.false
-  expect(data.followers.instance.manualApproval).to.be.true
-
-  expect(data.followings.instance.autoFollowBack.enabled).to.be.true
-  expect(data.followings.instance.autoFollowIndex.enabled).to.be.true
-  expect(data.followings.instance.autoFollowIndex.indexUrl).to.equal('https://updated.example.com')
-
-  expect(data.broadcastMessage.enabled).to.be.true
-  expect(data.broadcastMessage.level).to.equal('error')
-  expect(data.broadcastMessage.message).to.equal('super bad message')
-  expect(data.broadcastMessage.dismissable).to.be.true
-
-  expect(data.storyboards.enabled).to.be.false
-
-  expect(data.export.users.enabled).to.be.false
-  expect(data.export.users.exportExpiration).to.equal(43)
-  expect(data.export.users.maxUserVideoQuota).to.equal(42)
-}
-
-const newCustomConfig: CustomConfig = {
-  instance: {
-    name: 'PeerTube updated',
-    shortDescription: 'my short description',
-    description: 'my super description',
-    terms: 'my super terms',
-    codeOfConduct: 'my super coc',
-
-    creationReason: 'my super creation reason',
-    moderationInformation: 'my super moderation information',
-    administrator: 'Kuja',
-    maintenanceLifetime: 'forever',
-    businessModel: 'my super business model',
-    hardwareInformation: '2vCore 3GB RAM',
-
-    languages: [ 'en', 'es' ],
-    categories: [ 1, 2 ],
-
-    isNSFW: true,
-    defaultNSFWPolicy: 'blur' as 'blur',
-
-    defaultClientRoute: '/videos/recently-added',
-
-    customizations: {
-      javascript: 'alert("coucou")',
-      css: 'body { background-color: red; }'
-    }
-  },
-  theme: {
-    default: 'default'
-  },
-  services: {
-    twitter: {
-      username: '@Kuja'
-    }
-  },
-  client: {
-    videos: {
-      miniature: {
-        preferAuthorDisplayName: true
+      customizations: {
+        javascript: 'alert("coucou")',
+        css: 'body { background-color: red; }'
       }
     },
-    menu: {
-      login: {
-        redirectOnSingleExternalAuth: true
+    theme: {
+      default: 'default'
+    },
+    services: {
+      twitter: {
+        username: '@Kuja'
       }
-    }
-  },
-  cache: {
-    previews: {
-      size: 2
     },
-    captions: {
-      size: 3
-    },
-    torrents: {
-      size: 4
-    },
-    storyboards: {
-      size: 5
-    }
-  },
-  signup: {
-    enabled: false,
-    limit: 5,
-    requiresApproval: false,
-    requiresEmailVerification: false,
-    minimumAge: 10
-  },
-  admin: {
-    email: 'superadmin1@example.com'
-  },
-  contactForm: {
-    enabled: false
-  },
-  user: {
-    history: {
+    client: {
       videos: {
-        enabled: false
+        miniature: {
+          preferAuthorDisplayName: true
+        }
+      },
+      menu: {
+        login: {
+          redirectOnSingleExternalAuth: true
+        }
       }
     },
-    videoQuota: 5242881,
-    videoQuotaDaily: 318742,
-    defaultChannelName: 'Main $1 channel'
-  },
-  videoChannels: {
-    maxPerUser: 24
-  },
-  transcoding: {
-    enabled: true,
-    remoteRunners: {
-      enabled: true
+    cache: {
+      previews: {
+        size: 2
+      },
+      captions: {
+        size: 3
+      },
+      torrents: {
+        size: 4
+      },
+      storyboards: {
+        size: 5
+      }
     },
-    originalFile: {
-      keep: true
+    signup: {
+      enabled: false,
+      limit: 5,
+      requiresApproval: false,
+      requiresEmailVerification: false,
+      minimumAge: 10
     },
-    allowAdditionalExtensions: true,
-    allowAudioFiles: true,
-    threads: 1,
-    concurrency: 3,
-    profile: 'vod_profile',
-    resolutions: {
-      '0p': false,
-      '144p': false,
-      '240p': false,
-      '360p': true,
-      '480p': true,
-      '720p': false,
-      '1080p': false,
-      '1440p': false,
-      '2160p': false
+    admin: {
+      email: `admin${server.internalServerNumber}@example.com`
     },
-    alwaysTranscodeOriginalResolution: false,
-    webVideos: {
-      enabled: true
-    },
-    hls: {
-      enabled: false
-    }
-  },
-  live: {
-    enabled: true,
-    allowReplay: true,
-    latencySetting: {
+    contactForm: {
       enabled: false
     },
-    maxDuration: 5000,
-    maxInstanceLives: -1,
-    maxUserLives: 10,
+    user: {
+      history: {
+        videos: {
+          enabled: false
+        }
+      },
+      videoQuota: 5242881,
+      videoQuotaDaily: 318742,
+      defaultChannelName: 'Main $1 channel'
+    },
+    videoChannels: {
+      maxPerUser: 24
+    },
     transcoding: {
       enabled: true,
       remoteRunners: {
         enabled: true
       },
-      threads: 4,
-      profile: 'live_profile',
+      originalFile: {
+        keep: true
+      },
+      allowAdditionalExtensions: true,
+      allowAudioFiles: true,
+      threads: 1,
+      concurrency: 3,
+      profile: 'vod_profile',
       resolutions: {
-        '144p': true,
-        '240p': true,
+        '0p': false,
+        '144p': false,
+        '240p': false,
         '360p': true,
         '480p': true,
-        '720p': true,
-        '1080p': true,
-        '1440p': true,
-        '2160p': true
+        '720p': false,
+        '1080p': false,
+        '1440p': false,
+        '2160p': false
       },
-      alwaysTranscodeOriginalResolution: false
-    }
-  },
-  videoStudio: {
-    enabled: true,
-    remoteRunners: {
-      enabled: true
-    }
-  },
-  videoFile: {
-    update: {
-      enabled: true
-    }
-  },
-  import: {
-    videos: {
-      concurrency: 4,
-      http: {
-        enabled: false
+      alwaysTranscodeOriginalResolution: false,
+      webVideos: {
+        enabled: true
       },
-      torrent: {
+      hls: {
         enabled: false
       }
     },
-    videoChannelSynchronization: {
-      enabled: false,
-      maxPerUser: 10
-    },
-    users: {
-      enabled: false
-    }
-  },
-  trending: {
-    videos: {
-      algorithms: {
-        enabled: [ 'hot', 'most-viewed', 'most-liked' ],
-        default: 'hot'
-      }
-    }
-  },
-  autoBlacklist: {
-    videos: {
-      ofUsers: {
-        enabled: true
-      }
-    }
-  },
-  followers: {
-    instance: {
-      enabled: false,
-      manualApproval: true
-    }
-  },
-  followings: {
-    instance: {
-      autoFollowBack: {
-        enabled: true
-      },
-      autoFollowIndex: {
-        enabled: true,
-        indexUrl: 'https://updated.example.com'
-      }
-    }
-  },
-  broadcastMessage: {
-    enabled: true,
-    level: 'error',
-    message: 'super bad message',
-    dismissable: true
-  },
-  search: {
-    remoteUri: {
-      anonymous: true,
-      users: true
-    },
-    searchIndex: {
+    live: {
       enabled: true,
-      url: 'https://search.joinpeertube.org',
-      disableLocalSearch: true,
-      isDefaultSearch: true
-    }
-  },
-  storyboards: {
-    enabled: false
-  },
-  export: {
-    users: {
-      enabled: false,
-      exportExpiration: 43,
-      maxUserVideoQuota: 42
+      allowReplay: true,
+      latencySetting: {
+        enabled: false
+      },
+      maxDuration: 5000,
+      maxInstanceLives: -1,
+      maxUserLives: 10,
+      transcoding: {
+        enabled: true,
+        remoteRunners: {
+          enabled: true
+        },
+        threads: 4,
+        profile: 'live_profile',
+        resolutions: {
+          '144p': true,
+          '240p': true,
+          '360p': true,
+          '480p': true,
+          '720p': true,
+          '1080p': true,
+          '1440p': true,
+          '2160p': true
+        },
+        alwaysTranscodeOriginalResolution: false
+      }
+    },
+    videoStudio: {
+      enabled: true,
+      remoteRunners: {
+        enabled: true
+      }
+    },
+    videoFile: {
+      update: {
+        enabled: true
+      }
+    },
+    import: {
+      videos: {
+        concurrency: 4,
+        http: {
+          enabled: false
+        },
+        torrent: {
+          enabled: false
+        }
+      },
+      videoChannelSynchronization: {
+        enabled: false,
+        maxPerUser: 10
+      },
+      users: {
+        enabled: false
+      }
+    },
+    trending: {
+      videos: {
+        algorithms: {
+          enabled: [ 'hot', 'most-viewed', 'most-liked' ],
+          default: 'hot'
+        }
+      }
+    },
+    autoBlacklist: {
+      videos: {
+        ofUsers: {
+          enabled: true
+        }
+      }
+    },
+    followers: {
+      instance: {
+        enabled: false,
+        manualApproval: true
+      }
+    },
+    followings: {
+      instance: {
+        autoFollowBack: {
+          enabled: true
+        },
+        autoFollowIndex: {
+          enabled: true,
+          indexUrl: 'https://updated.example.com'
+        }
+      }
+    },
+    broadcastMessage: {
+      enabled: true,
+      level: 'error',
+      message: 'super bad message',
+      dismissable: true
+    },
+    search: {
+      remoteUri: {
+        anonymous: true,
+        users: true
+      },
+      searchIndex: {
+        enabled: true,
+        url: 'https://search.joinpeertube.org',
+        disableLocalSearch: true,
+        isDefaultSearch: true
+      }
+    },
+    storyboards: {
+      enabled: false
+    },
+    export: {
+      users: {
+        enabled: false,
+        exportExpiration: 43,
+        maxUserVideoQuota: 42
+      }
     }
   }
 }
 
 describe('Test static config', function () {
-  let server: PeerTubeServer = null
+  let server: PeerTubeServer
 
   before(async function () {
     this.timeout(30000)
@@ -515,7 +395,7 @@ describe('Test static config', function () {
   })
 
   it('Should error when client tries to update', async function () {
-    await server.config.updateCustomConfig({ newCustomConfig, expectedStatus: 405 })
+    await server.config.updateCustomConfig({ newCustomConfig: buildNewCustomConfig(server), expectedStatus: 405 })
   })
 
   after(async function () {
@@ -586,10 +466,10 @@ describe('Test config', function () {
     })
 
     it('Should update the customized configuration', async function () {
-      await server.config.updateCustomConfig({ newCustomConfig })
+      await server.config.updateCustomConfig({ newCustomConfig: buildNewCustomConfig(server) })
 
       const data = await server.config.getCustomConfig()
-      checkUpdatedConfig(data)
+      expect(data).to.deep.equal(buildNewCustomConfig(server))
     })
 
     it('Should have the correct updated video allowed extensions', async function () {
@@ -621,7 +501,7 @@ describe('Test config', function () {
 
       const data = await server.config.getCustomConfig()
 
-      checkUpdatedConfig(data)
+      expect(data).to.deep.equal(buildNewCustomConfig(server))
     })
 
     it('Should fetch the about information', async function () {
@@ -703,18 +583,21 @@ describe('Test config', function () {
     }
 
     describe('Banner', function () {
-      let bannerPath: string
+      const bannerPaths: string[] = []
 
       it('Should update instance banner', async function () {
         await server.config.updateInstanceImage({ type: ActorImageType.BANNER, fixture: 'banner.jpg' })
 
         const { banners } = await checkAndGetServerImages()
 
-        expect(banners).to.have.lengthOf(1)
+        expect(banners).to.have.lengthOf(2)
 
-        bannerPath = banners[0].path
-        await testImage(server.url, 'banner-resized', bannerPath)
-        await testFileExistsOrNot(server, 'avatars', basename(bannerPath), true)
+        for (const banner of banners) {
+          await testImage(server.url, `banner-resized-${banner.width}`, banner.path)
+          await testFileExistsOnFSOrNot(server, 'avatars', basename(banner.path), true)
+
+          bannerPaths.push(banner.path)
+        }
       })
 
       it('Should re-update an existing instance banner', async function () {
@@ -727,12 +610,14 @@ describe('Test config', function () {
         const { banners } = await checkAndGetServerImages()
         expect(banners).to.have.lengthOf(0)
 
-        await testFileExistsOrNot(server, 'avatars', basename(bannerPath), false)
+        for (const bannerPath of bannerPaths) {
+          await testFileExistsOnFSOrNot(server, 'avatars', basename(bannerPath), false)
+        }
       })
     })
 
     describe('Avatar', function () {
-      let avatarPath: string
+      const avatarPaths: string[] = []
 
       it('Should update instance avatar', async function () {
         for (const extension of [ '.png', '.gif' ]) {
@@ -744,10 +629,10 @@ describe('Test config', function () {
 
           for (const avatar of avatars) {
             await testAvatarSize({ url: server.url, avatar, imageName: `avatar-resized-${avatar.width}x${avatar.width}` })
-          }
+            await testFileExistsOnFSOrNot(server, 'avatars', basename(avatar.path), true)
 
-          avatarPath = avatars[0].path
-          await testFileExistsOrNot(server, 'avatars', basename(avatarPath), true)
+            avatarPaths.push(avatar.path)
+          }
         }
       })
 
@@ -768,7 +653,9 @@ describe('Test config', function () {
         const { avatars } = await checkAndGetServerImages()
         expect(avatars).to.have.lengthOf(0)
 
-        await testFileExistsOrNot(server, 'avatars', basename(avatarPath), false)
+        for (const avatarPath of avatarPaths) {
+          await testFileExistsOnFSOrNot(server, 'avatars', basename(avatarPath), false)
+        }
       })
 
       it('Should not have the avatars anymore in the AP representation of the instance', async function () {
