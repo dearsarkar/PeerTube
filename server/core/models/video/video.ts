@@ -19,7 +19,7 @@ import {
   type VideoStateType
 } from '@peertube/peertube-models'
 import { uuidToShort } from '@peertube/peertube-node-utils'
-import { getPrivaciesForFederation, isPrivacyForFederation, isStateForFederation } from '@server/helpers/video.js'
+import { getPrivaciesForFederation } from '@server/helpers/video.js'
 import { InternalEventEmitter } from '@server/lib/internal-event-emitter.js'
 import { LiveManager } from '@server/lib/live/live-manager.js'
 import {
@@ -1392,6 +1392,12 @@ export class VideoModel extends SequelizeModel<VideoModel> {
     return queryBuilder.queryVideo({ id, transaction, type: 'thumbnails-blacklist' })
   }
 
+  static loadAndPopulateAccountAndFiles (id: number | string, transaction?: Transaction): Promise<MVideoAccountLightBlacklistAllFiles> {
+    const queryBuilder = new VideoModelGetQueryBuilder(VideoModel.sequelize)
+
+    return queryBuilder.queryVideo({ id, transaction, type: 'account-blacklist-files' })
+  }
+
   static loadImmutableAttributes (id: number | string, t?: Transaction): Promise<MVideoImmutable> {
     const fun = () => {
       const query = {
@@ -1446,6 +1452,12 @@ export class VideoModel extends SequelizeModel<VideoModel> {
     const queryBuilder = new VideoModelGetQueryBuilder(VideoModel.sequelize)
 
     return queryBuilder.queryVideo({ url, transaction, type: 'thumbnails' })
+  }
+
+  static loadByUrlWithBlacklist (url: string, transaction?: Transaction): Promise<MVideoThumbnailBlacklist> {
+    const queryBuilder = new VideoModelGetQueryBuilder(VideoModel.sequelize)
+
+    return queryBuilder.queryVideo({ url, transaction, type: 'thumbnails-blacklist' })
   }
 
   static loadByUrlAndPopulateAccount (url: string, transaction?: Transaction): Promise<MVideoAccountLight> {
@@ -2043,18 +2055,6 @@ export class VideoModel extends SequelizeModel<VideoModel> {
     if (this.isOwned()) return false
 
     return isOutdated(this, ACTIVITY_PUB.VIDEO_REFRESH_INTERVAL)
-  }
-
-  hasPrivacyForFederation () {
-    return isPrivacyForFederation(this.privacy)
-  }
-
-  hasStateForFederation () {
-    return isStateForFederation(this.state)
-  }
-
-  isNewVideoForFederation (newPrivacy: VideoPrivacyType) {
-    return this.hasPrivacyForFederation() === false && isPrivacyForFederation(newPrivacy) === true
   }
 
   setAsRefreshed (transaction?: Transaction) {

@@ -1,10 +1,11 @@
-import debug from 'debug'
-import videojs from 'video.js'
 import { timeToInt } from '@peertube/peertube-core-utils'
 import { VideoView, VideoViewEvent } from '@peertube/peertube-models'
 import { logger } from '@root-helpers/logger'
 import { isIOS, isMobile, isSafari } from '@root-helpers/web-browser'
+import debug from 'debug'
+import videojs from 'video.js'
 import {
+  getPlayerSessionId,
   getStoredLastSubtitle,
   getStoredMute,
   getStoredVolume,
@@ -113,6 +114,8 @@ class PeerTubePlugin extends Plugin {
           this.currentSubtitle = undefined
           return
         }
+
+        if (this.currentSubtitle === showing.language) return
 
         this.currentSubtitle = showing.language
         saveLastSubtitle(showing.language)
@@ -371,7 +374,9 @@ class PeerTubePlugin extends Plugin {
 
     if (!this.videoViewUrl()) return Promise.resolve(true)
 
-    const body: VideoView = { currentTime, viewEvent }
+    const sessionId = getPlayerSessionId()
+
+    const body: VideoView = { currentTime, viewEvent, sessionId }
 
     const headers = new Headers({ 'Content-type': 'application/json; charset=UTF-8' })
     if (this.authorizationHeader()) headers.set('Authorization', this.authorizationHeader())

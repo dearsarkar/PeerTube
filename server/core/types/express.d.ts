@@ -20,7 +20,8 @@ import {
   MVideoLiveFormattable,
   MVideoPassword,
   MVideoPlaylistFull,
-  MVideoPlaylistFullSummary
+  MVideoPlaylistFullSummary,
+  MVideoThumbnailBlacklist
 } from '@server/types/models/index.js'
 import { MOAuthTokenUser } from '@server/types/models/oauth/oauth-token.js'
 import { MPlugin, MServer, MServerBlocklist } from '@server/types/models/server.js'
@@ -44,8 +45,7 @@ import {
   MVideoCaptionVideo,
   MVideoFullLight,
   MVideoRedundancyVideo,
-  MVideoShareActor,
-  MVideoThumbnail
+  MVideoShareActor
 } from './models/index.js'
 import { MRunner, MRunnerJobRunner, MRunnerRegistrationToken } from './models/runners/index.js'
 import { MVideoSource } from './models/video/video-source.js'
@@ -54,6 +54,7 @@ declare module 'express' {
   export interface Request {
     query: any
     method: HttpMethodType
+    rawBody: Buffer // Allow plugin routes to access the raw body
   }
 
   // ---------------------------------------------------------------------------
@@ -134,7 +135,7 @@ declare module 'express' {
       videoAPI?: MVideoFormattableDetails
       videoAll?: MVideoFullLight
       onlyImmutableVideo?: MVideoImmutable
-      onlyVideo?: MVideoThumbnail
+      onlyVideo?: MVideoThumbnailBlacklist
       videoId?: MVideoId
 
       videoLive?: MVideoLiveFormattable

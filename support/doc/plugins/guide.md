@@ -247,7 +247,7 @@ function register ({
   router.get('/ping', (req, res) => res.json({ message: 'pong' }))
 
   // Users are automatically authenticated
-  router.get('/auth', async (res, res) => {
+  router.get('/auth', async (req, res) => {
     const user = await peertubeHelpers.user.getAuthUser(res)
 
     const isAdmin = user.role === 0
@@ -261,6 +261,15 @@ function register ({
       isUser
     })
   })
+
+  router.post('/webhook', async (req, res) => {
+    const rawBody = req.rawBody // Buffer containing the raw body
+
+    handleRawBody(rawBody)
+
+    res.status(204)
+  })
+
 }
 ```
 
@@ -863,6 +872,11 @@ To create a client page, register a new client route:
 function register ({ registerClientRoute }) {
   registerClientRoute({
     route: 'my-super/route',
+    title: 'Page title for this route',
+    parentRoute: '/my-account', // Optional. The full path will be /my-account/p/my-super/route.
+    menuItem: { // Optional. This will add a menu item to this route. Only supported when parentRoute is '/my-account'.
+      label: 'Sub route',
+    },
     onMount: ({ rootEl }) => {
       rootEl.innerHTML = 'hello'
     }

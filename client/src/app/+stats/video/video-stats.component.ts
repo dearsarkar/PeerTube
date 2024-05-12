@@ -309,7 +309,7 @@ export class VideoStatsComponent implements OnInit {
       {
         label: $localize`Views`,
         value: this.numberFormatter.transform(this.video.views),
-        help: $localize`A view means that someone watched the video for at least 30 seconds`
+        help: $localize`A view means that someone watched the video for several seconds (10 seconds by default)`
       },
       {
         label: $localize`Likes`,
@@ -320,11 +320,11 @@ export class VideoStatsComponent implements OnInit {
     this.overallStatCards = [
       {
         label: $localize`Average watch time`,
-        value: secondsToTime(overallStats.averageWatchTime)
+        value: secondsToTime({ seconds: overallStats.averageWatchTime, format: 'locale-string' })
       },
       {
         label: $localize`Total watch time`,
-        value: secondsToTime(overallStats.totalWatchTime)
+        value: secondsToTime({ seconds: overallStats.totalWatchTime, format: 'locale-string' })
       },
       {
         label: $localize`Peak viewers`,

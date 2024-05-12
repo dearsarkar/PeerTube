@@ -24,7 +24,7 @@ async function processCreateView (activity: ActivityView, byActor: MActorSignatu
 
   const { video } = await getOrCreateAPVideo({
     videoObject,
-    fetchType: 'only-video',
+    fetchType: 'only-video-and-blacklist',
     allowRefresh: false
   })
 
@@ -32,8 +32,8 @@ async function processCreateView (activity: ActivityView, byActor: MActorSignatu
     video,
     viewerId: activity.id,
 
-    viewerExpires: activity.expires
-      ? new Date(activity.expires)
+    viewerExpires: getExpires(activity)
+      ? new Date(getExpires(activity))
       : undefined,
     viewerResultCounter: getViewerResultCounter(activity)
   })
@@ -49,10 +49,15 @@ async function processCreateView (activity: ActivityView, byActor: MActorSignatu
 function getViewerResultCounter (activity: ActivityView) {
   const result = activity.result
 
-  if (!activity.expires || result?.interactionType !== 'WatchAction' || result?.type !== 'InteractionCounter') return undefined
+  if (!getExpires(activity) || result?.interactionType !== 'WatchAction' || result?.type !== 'InteractionCounter') return undefined
 
   const counter = parseInt(result.userInteractionCount + '')
   if (isNaN(counter)) return undefined
 
   return counter
+}
+
+// TODO: compat with < 6.1, remove in 7.0
+function getExpires (activity: ActivityView) {
+  return activity.expires || activity['expiration'] as string
 }

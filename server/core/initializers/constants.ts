@@ -45,7 +45,7 @@ import { cpus } from 'os'
 
 // ---------------------------------------------------------------------------
 
-const LAST_MIGRATION_VERSION = 830
+const LAST_MIGRATION_VERSION = 835
 
 // ---------------------------------------------------------------------------
 
@@ -502,7 +502,7 @@ const CONSTRAINTS_FIELDS = {
 }
 
 const VIEW_LIFETIME = {
-  VIEW: CONFIG.VIEWS.VIDEOS.IP_VIEW_EXPIRATION,
+  VIEW: CONFIG.VIEWS.VIDEOS.VIEW_EXPIRATION,
   VIEWER_COUNTER: 60000 * 2, // 2 minutes
   VIEWER_STATS: 60000 * 60 // 1 hour
 }
@@ -774,7 +774,6 @@ const ACTIVITY_PUB = {
     'application/ld+json; profile="https://www.w3.org/ns/activitystreams"'
   ],
   ACCEPT_HEADER: 'application/activity+json, application/ld+json',
-  PUBLIC: 'https://www.w3.org/ns/activitystreams#Public',
   COLLECTION_ITEMS_PER_PAGE: 10,
   FETCH_PAGE_LIMIT: 2000,
   MAX_RECURSION_COMMENTS: 100,
@@ -1509,6 +1508,10 @@ async function buildLanguages () {
   // Override Portuguese label
   languages['pt'] = 'Portuguese (Brazilian)'
   languages['pt-PT'] = 'Portuguese (Portugal)'
+
+  // Override Spanish labels
+  languages['es'] = 'Spanish (Spain)'
+  languages['es-419'] = 'Spanish (Latin America)'
 
   // Chinese languages
   languages['zh-Hans'] = 'Simplified Chinese'
